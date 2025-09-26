@@ -7,6 +7,7 @@
 ; nasm -f elf64 asm.asm -o asm.o
 ; gcc asm.o -o asm_runner -no-pie
 ; ./asm_runner "Your intention here" 1000
+; Licensed under the GPL3. -- 26/10/2025
 
 extern printf, sleep, fflush, atoi
 
