@@ -1517,10 +1517,10 @@
           elements.copyBtn.addEventListener("click", handleCopy);
           elements.startOverBtn.addEventListener("click", resetSession);
           elements.navPrevBtn.addEventListener("click", () =>
-            loadHistory(state.historyIndex - 1)
+            loadHistory(state.historyIndex - 1, elements.navPrevBtn)
           );
           elements.navNextBtn.addEventListener("click", () =>
-            loadHistory(state.historyIndex + 1)
+            loadHistory(state.historyIndex + 1, elements.navNextBtn)
           );
 
         }
@@ -1586,6 +1586,7 @@
 
           applyPattern(pattern);
           addHistory(pattern);
+          flashButton(elements.autoSelectBtn, "Selection Saved!", 1200);
         }
 
         function handleGridInteraction(event, key) {
@@ -2291,11 +2292,14 @@
           );
         }
 
-        function loadHistory(index) {
+        function loadHistory(index, button) {
           if (index < 0 || index >= state.history.length) return;
           state.historyIndex = index;
           applyPattern(state.history[index]);
           updateNavigationButtons();
+          if (button) {
+            flashButton(button, "Loaded", 800);
+          }
         }
 
         function clearHistory() {
@@ -2333,6 +2337,17 @@
           if (counts.length === 1) return `${counts[0]}`;
           const sorted = [...counts].sort((a, b) => a - b);
           return `${sorted.slice(0, -1).join(", ")} or ${sorted.at(-1)}`;
+        }
+
+        function flashButton(button, message, duration = 1000) {
+          const originalContent = button.innerHTML;
+          const wasDisabled = button.disabled;
+          button.innerHTML = message;
+          button.disabled = true;
+          setTimeout(() => {
+            button.innerHTML = originalContent;
+            button.disabled = wasDisabled;
+          }, duration);
         }
 
         function updateScrollShadow(grid) {
