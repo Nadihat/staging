@@ -1136,6 +1136,12 @@
           "12th House (Subconscious & Endings)"
         ]);
 
+        const ASTROLOGY_ASPECTS = Object.freeze([
+          "Novile", "Quartile", "Square", "Parallel", "Trine", "Biquintile",
+          "Contra-parallel", "Opposition", "Sesquisquare", "Quindecile",
+          "Bi-septile", "Semi-quintile", "Quincunx", "Tri-septile"
+        ]);
+
         const MEIHUA_TRIGRAMS = Object.freeze([
           "Ch'ien (Heaven)", "Tui (Lake)", "Li (Fire)", "Chen (Thunder)",
           "Sun (Wind)", "K'an (Water)", "Ken (Mountain)", "K'un (Earth)"
@@ -1176,6 +1182,7 @@
             astrologyZodiac: [],
             astrologyPlanet: [],
             astrologyHouse: [],
+            astrologyAspect: [],
             ogham: [],
             meihuaUpper: [],
             meihuaLower: [],
@@ -1397,11 +1404,11 @@
             feedback: null,
             error: null,
             range: { min: 1, max: 10 },
-            maxSelections: 1,
-            allowedCounts: [1],
+            maxSelections: 4,
+            allowedCounts: [4],
             optional: true,
-            autoCounts: [1],
-            showOrder: false,
+            autoCounts: [4],
+            showOrder: true,
             label: "Astrology Planet",
           },
           astrologyHouse: {
@@ -1415,6 +1422,18 @@
             autoCounts: [1],
             showOrder: false,
             label: "Astrology House",
+          },
+          astrologyAspect: {
+            element: null,
+            feedback: null,
+            error: null,
+            range: { min: 1, max: 14 },
+            maxSelections: 2,
+            allowedCounts: [2],
+            optional: true,
+            autoCounts: [2],
+            showOrder: true,
+            label: "Astrology Aspect",
           },
           meihuaUpper: {
             element: null,
@@ -1852,7 +1871,7 @@
           );
           lines.push("");
 
-          const { tarot = [], runes = [], iching = [], ichingLines = [], taixuanjing = [], lingqijingUp = [], lingqijingMiddle = [], lingqijingDown = [], kabbalah = [], dreamspellSolarSeal = [], dreamspellGalacticTone = [], astrologyZodiac = [], astrologyPlanet = [], astrologyHouse = [], ogham = [], meihuaUpper = [], meihuaLower = [], meihuaMovingLine = [] } =
+          const { tarot = [], runes = [], iching = [], ichingLines = [], taixuanjing = [], lingqijingUp = [], lingqijingMiddle = [], lingqijingDown = [], kabbalah = [], dreamspellSolarSeal = [], dreamspellGalacticTone = [], astrologyZodiac = [], astrologyPlanet = [], astrologyHouse = [], astrologyAspect = [], ogham = [], meihuaUpper = [], meihuaLower = [], meihuaMovingLine = [] } =
             data;
             data;
 
@@ -1932,14 +1951,16 @@
             lines.push("");
           }
 
-          if (astrologyZodiac.length && astrologyPlanet.length && astrologyHouse.length) {
+          if (astrologyZodiac.length && astrologyPlanet.length === 4 && astrologyHouse.length && astrologyAspect.length === 2) {
             const zodiac = state.mapper.getAstrologyZodiac(astrologyZodiac[0]);
-            const planet = state.mapper.getAstrologyPlanet(astrologyPlanet[0]);
             const house = state.mapper.getAstrologyHouse(astrologyHouse[0]);
+            const planets = state.mapper.getAstrologyPlanets(astrologyPlanet);
+            const aspects = state.mapper.getAstrologyAspects(astrologyAspect);
+
             lines.push("--- Astrology ---");
-            lines.push(`Planet: ${planet}`);
             lines.push(`Zodiac Sign: ${zodiac}`);
             lines.push(`House: ${house}`);
+            lines.push(`Aspects: ${planets[0]} ${aspects[0]} ${planets[1]}, ${planets[2]} ${aspects[1]} ${planets[3]}`);
             lines.push("");
           }
 
@@ -2109,6 +2130,7 @@
             this.astrologyZodiacMap = shuffle(ASTROLOGY_ZODIAC);
             this.astrologyPlanetMap = shuffle(ASTROLOGY_PLANETS);
             this.astrologyHouseMap = shuffle(ASTROLOGY_HOUSES);
+            this.astrologyAspectMap = shuffle(ASTROLOGY_ASPECTS);
           }
 
           getTarot(numbers) {
@@ -2192,6 +2214,14 @@
 
           getAstrologyHouse(number) {
             return this.astrologyHouseMap[number - 1];
+          }
+
+          getAstrologyPlanets(numbers) {
+            return numbers.map((value) => this.astrologyPlanetMap[value - 1]);
+          }
+
+          getAstrologyAspects(numbers) {
+            return numbers.map((value) => this.astrologyAspectMap[value - 1]);
           }
 
           getMeihuaHexagrams(upper, lower, movingLine) {
