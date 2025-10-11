@@ -1136,6 +1136,27 @@
           "12th House (Subconscious & Endings)"
         ]);
 
+        const MEIHUA_TRIGRAMS = Object.freeze([
+          "Ch'ien (Heaven)", "Tui (Lake)", "Li (Fire)", "Chen (Thunder)",
+          "Sun (Wind)", "K'an (Water)", "Ken (Mountain)", "K'un (Earth)"
+        ]);
+
+        const TRIGRAM_LINE_PATTERNS = Object.freeze({
+          1: "111", 2: "011", 3: "101", 4: "001",
+          5: "110", 6: "010", 7: "100", 8: "000"
+        });
+
+        const TRIGRAM_HEXAGRAM_MAP = Object.freeze({
+          1: { 1: 1,  2: 43, 3: 14, 4: 34, 5: 9,  6: 5,  7: 26, 8: 11 },
+          2: { 1: 10, 2: 58, 3: 38, 4: 54, 5: 61, 6: 60, 7: 41, 8: 19 },
+          3: { 1: 13, 2: 49, 3: 30, 4: 55, 5: 37, 6: 63, 7: 22, 8: 36 },
+          4: { 1: 25, 2: 17, 3: 21, 4: 51, 5: 42, 6: 3,  7: 27, 8: 24 },
+          5: { 1: 44, 2: 28, 3: 50, 4: 32, 5: 57, 6: 48, 7: 18, 8: 46 },
+          6: { 1: 6,  2: 47, 3: 64, 4: 40, 5: 59, 6: 29, 7: 4,  8: 7  },
+          7: { 1: 33, 2: 62, 3: 56, 4: 31, 5: 53, 6: 39, 7: 52, 8: 15 },
+          8: { 1: 12, 2: 45, 3: 35, 4: 16, 5: 20, 6: 8,  7: 23, 8: 2  }
+        });
+
         const state = {
           question: "",
           sessionHash: "",
@@ -1156,6 +1177,9 @@
             astrologyPlanet: [],
             astrologyHouse: [],
             ogham: [],
+            meihuaUpper: [],
+            meihuaLower: [],
+            meihuaMovingLine: [],
           },
           history: [],
           historyIndex: -1,
@@ -1391,6 +1415,42 @@
             autoCounts: [1],
             showOrder: false,
             label: "Astrology House",
+          },
+          meihuaUpper: {
+            element: null,
+            feedback: null,
+            error: null,
+            range: { min: 1, max: 8 },
+            maxSelections: 1,
+            allowedCounts: [1],
+            optional: true,
+            autoCounts: [1],
+            showOrder: false,
+            label: "Meihua Upper Trigram",
+          },
+          meihuaLower: {
+            element: null,
+            feedback: null,
+            error: null,
+            range: { min: 1, max: 8 },
+            maxSelections: 1,
+            allowedCounts: [1],
+            optional: true,
+            autoCounts: [1],
+            showOrder: false,
+            label: "Meihua Lower Trigram",
+          },
+          meihuaMovingLine: {
+            element: null,
+            feedback: null,
+            error: null,
+            range: { min: 1, max: 6 },
+            maxSelections: 1,
+            allowedCounts: [1],
+            optional: true,
+            autoCounts: [1],
+            showOrder: false,
+            label: "Meihua Moving Line",
           },
         };
 
@@ -1792,7 +1852,7 @@
           );
           lines.push("");
 
-          const { tarot = [], runes = [], iching = [], ichingLines = [], taixuanjing = [], lingqijingUp = [], lingqijingMiddle = [], lingqijingDown = [], kabbalah = [], dreamspellSolarSeal = [], dreamspellGalacticTone = [], astrologyZodiac = [], astrologyPlanet = [], astrologyHouse = [], ogham = [] } =
+          const { tarot = [], runes = [], iching = [], ichingLines = [], taixuanjing = [], lingqijingUp = [], lingqijingMiddle = [], lingqijingDown = [], kabbalah = [], dreamspellSolarSeal = [], dreamspellGalacticTone = [], astrologyZodiac = [], astrologyPlanet = [], astrologyHouse = [], ogham = [], meihuaUpper = [], meihuaLower = [], meihuaMovingLine = [] } =
             data;
             data;
 
@@ -1840,6 +1900,14 @@
             lines.push("--- I-Ching ---");
             lines.push(`Hexagram Slot ${slot}: ${hexagram}`);
             lines.push(`Moving Lines: ${moving.length ? moving.join(", ") : "None"}`);
+            lines.push("");
+          }
+
+          if (meihuaUpper.length && meihuaLower.length && meihuaMovingLine.length) {
+            const { original, resultant } = state.mapper.getMeihuaHexagrams(meihuaUpper[0], meihuaLower[0], meihuaMovingLine[0]);
+            lines.push("--- Meihua Yishu (Plum Blossom) ---");
+            lines.push(`Original Hexagram: ${original}`);
+            lines.push(`Resultant Hexagram: ${resultant}`);
             lines.push("");
           }
 
@@ -2124,6 +2192,34 @@
 
           getAstrologyHouse(number) {
             return this.astrologyHouseMap[number - 1];
+          }
+
+          getMeihuaHexagrams(upper, lower, movingLine) {
+            const originalHexagramNumber = TRIGRAM_HEXAGRAM_MAP[lower][upper];
+            const originalHexagram = this.getIChing(originalHexagramNumber);
+
+            const lowerLines = TRIGRAM_LINE_PATTERNS[lower];
+            const upperLines = TRIGRAM_LINE_PATTERNS[upper];
+            const originalPattern = `${upperLines}${lowerLines}`;
+
+            const lineIndex = 6 - movingLine;
+            const originalLine = originalPattern[lineIndex];
+            const changedLine = originalLine === "1" ? "0" : "1";
+            const newPattern = `${originalPattern.slice(0, lineIndex)}${changedLine}${originalPattern.slice(lineIndex + 1)}`;
+
+            const newUpperLines = newPattern.slice(0, 3);
+            const newLowerLines = newPattern.slice(3, 6);
+
+            const patternToTrigram = Object.fromEntries(
+              Object.entries(TRIGRAM_LINE_PATTERNS).map(([k, v]) => [v, k])
+            );
+            const newUpper = patternToTrigram[newUpperLines];
+            const newLower = patternToTrigram[newLowerLines];
+
+            const resultantHexagramNumber = TRIGRAM_HEXAGRAM_MAP[newLower][newUpper];
+            const resultantHexagram = this.getIChing(resultantHexagramNumber);
+
+            return { original: originalHexagram, resultant: resultantHexagram };
           }
         }
 
