@@ -1089,6 +1089,53 @@
           "Cosmic",
         ]);
 
+        const OGHAM_STAVES = Object.freeze([
+          "1: Beith (Birch)",
+          "2: Luis (Rowan)",
+          "3: Fearn (Alder)",
+          "4: Saille (Willow)",
+          "5: Nuin (Ash)",
+          "6: Huath (Hawthorn)",
+          "7: Duir (Oak)",
+          "8: Tinne (Holly)",
+          "9: Coll (Hazel)",
+          "10: Quert (Apple)",
+          "11: Muin (Vine)",
+          "12: Gort (Ivy)",
+          "13: Ngetal (Reed)",
+          "14: Straif (Blackthorn)",
+          "15: Ruis (Elder)",
+          "16: Ailm (Elm/Pine)",
+          "17: Onn (Gorse)",
+          "18: Ur (Heather)",
+          "19: Eadha (Aspen)",
+          "20: Iodhadh (Yew)",
+          "21: Eabhadh (Grove/Koad)",
+          "22: Oir (Spindle)",
+          "23: Uillean (Honeysuckle)",
+          "24: Ifin (Pine)",
+          "25: Amhancholl (Witch Hazel)",
+        ]);
+
+        const ASTROLOGY_ZODIAC = Object.freeze([
+          "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra",
+          "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+        ]);
+
+        const ASTROLOGY_PLANETS = Object.freeze([
+          "Sun", "Moon", "Mercury", "Venus", "Mars",
+          "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"
+        ]);
+
+        const ASTROLOGY_HOUSES = Object.freeze([
+          "1st House (Self)", "2nd House (Possessions)", "3rd House (Communication)",
+          "4th House (Home & Family)", "5th House (Creativity & Pleasure)",
+          "6th House (Health & Work)", "7th House (Partnerships)",
+          "8th House (Transformation & Shared Resources)", "9th House (Philosophy & Travel)",
+          "10th House (Career & Public Life)", "11th House (Friendships & Hopes)",
+          "12th House (Subconscious & Endings)"
+        ]);
+
         const state = {
           question: "",
           sessionHash: "",
@@ -1105,6 +1152,10 @@
             kabbalah: [],
             dreamspellSolarSeal: [],
             dreamspellGalacticTone: [],
+            astrologyZodiac: [],
+            astrologyPlanet: [],
+            astrologyHouse: [],
+            ogham: [],
           },
           history: [],
           historyIndex: -1,
@@ -1292,6 +1343,54 @@
             autoCounts: [1],
             showOrder: false,
             label: "Dreamspell galactic tone",
+          },
+          ogham: {
+            element: null,
+            feedback: null,
+            error: null,
+            range: { min: 1, max: 25 },
+            maxSelections: 3,
+            allowedCounts: [1, 3],
+            optional: true,
+            autoCounts: [1, 3],
+            showOrder: true,
+            label: "Ogham slot",
+          },
+          astrologyZodiac: {
+            element: null,
+            feedback: null,
+            error: null,
+            range: { min: 1, max: 12 },
+            maxSelections: 1,
+            allowedCounts: [1],
+            optional: true,
+            autoCounts: [1],
+            showOrder: false,
+            label: "Astrology Zodiac Sign",
+          },
+          astrologyPlanet: {
+            element: null,
+            feedback: null,
+            error: null,
+            range: { min: 1, max: 10 },
+            maxSelections: 1,
+            allowedCounts: [1],
+            optional: true,
+            autoCounts: [1],
+            showOrder: false,
+            label: "Astrology Planet",
+          },
+          astrologyHouse: {
+            element: null,
+            feedback: null,
+            error: null,
+            range: { min: 1, max: 12 },
+            maxSelections: 1,
+            allowedCounts: [1],
+            optional: true,
+            autoCounts: [1],
+            showOrder: false,
+            label: "Astrology House",
           },
         };
 
@@ -1693,7 +1792,7 @@
           );
           lines.push("");
 
-          const { tarot = [], runes = [], iching = [], ichingLines = [], taixuanjing = [], lingqijingUp = [], lingqijingMiddle = [], lingqijingDown = [], kabbalah = [], dreamspellSolarSeal = [], dreamspellGalacticTone = [] } =
+          const { tarot = [], runes = [], iching = [], ichingLines = [], taixuanjing = [], lingqijingUp = [], lingqijingMiddle = [], lingqijingDown = [], kabbalah = [], dreamspellSolarSeal = [], dreamspellGalacticTone = [], astrologyZodiac = [], astrologyPlanet = [], astrologyHouse = [], ogham = [] } =
             data;
             data;
 
@@ -1727,6 +1826,13 @@
             lines.push("");
           }
 
+          if (ogham.length) {
+            const mapped = state.mapper.getOgham(ogham);
+            lines.push("--- Ogham ---");
+            lines.push(`Staves: ${mapped.join(", ")}`);
+            lines.push("");
+          }
+
           if (iching.length) {
             const slot = iching[0];
             const hexagram = state.mapper.getIChing(slot);
@@ -1755,6 +1861,17 @@
             const mapped = state.mapper.getKabbalah(kabbalah);
             lines.push("--- Kabbalah ---");
             lines.push(`Paths / States: ${mapped.join(", ")}`);
+            lines.push("");
+          }
+
+          if (astrologyZodiac.length && astrologyPlanet.length && astrologyHouse.length) {
+            const zodiac = state.mapper.getAstrologyZodiac(astrologyZodiac[0]);
+            const planet = state.mapper.getAstrologyPlanet(astrologyPlanet[0]);
+            const house = state.mapper.getAstrologyHouse(astrologyHouse[0]);
+            lines.push("--- Astrology ---");
+            lines.push(`Planet: ${planet}`);
+            lines.push(`Zodiac Sign: ${zodiac}`);
+            lines.push(`House: ${house}`);
             lines.push("");
           }
 
@@ -1919,6 +2036,11 @@
 
             this.dreamspellSolarSealMap = shuffle(DREAMSPELL_SOLAR_SEALS);
             this.dreamspellGalacticToneMap = shuffle(DREAMSPELL_GALACTIC_TONES);
+
+            this.oghamMap = shuffle(OGHAM_STAVES);
+            this.astrologyZodiacMap = shuffle(ASTROLOGY_ZODIAC);
+            this.astrologyPlanetMap = shuffle(ASTROLOGY_PLANETS);
+            this.astrologyHouseMap = shuffle(ASTROLOGY_HOUSES);
           }
 
           getTarot(numbers) {
@@ -1986,6 +2108,22 @@
               antipode: `${antipodeSeal} (${galacticTone})`,
               occult: `${occultSeal} (${occultTone})`,
             };
+          }
+
+          getOgham(numbers) {
+            return numbers.map((value) => this.oghamMap[value - 1]);
+          }
+
+          getAstrologyZodiac(number) {
+            return this.astrologyZodiacMap[number - 1];
+          }
+
+          getAstrologyPlanet(number) {
+            return this.astrologyPlanetMap[number - 1];
+          }
+
+          getAstrologyHouse(number) {
+            return this.astrologyHouseMap[number - 1];
           }
         }
 
