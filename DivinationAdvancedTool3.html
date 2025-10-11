@@ -2610,8 +2610,11 @@
             const solarSealNumber = DREAMSPELL_SOLAR_SEALS.indexOf(solarSeal) + 1;
             const galacticToneNumber = DREAMSPELL_GALACTIC_TONES.indexOf(galacticTone) + 1;
 
-            const analogSealNumber = 19 - solarSealNumber;
-            const analogSeal = this.dreamspellSolarSealMap[analogSealNumber];
+            const analogMap = { 19: 4, 20: 10 };
+            const analogSealNumber =
+              analogMap[solarSealNumber] || 19 - solarSealNumber;
+            const analogSeal =
+              this.dreamspellSolarSealMap[analogSealNumber - 1];
 
             let antipodeSealNumber = solarSealNumber + 10;
             if (antipodeSealNumber > 20) {
