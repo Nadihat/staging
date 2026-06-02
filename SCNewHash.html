@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ServitorConnect Web</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #intentionInput {
+            width: 80ch;
+            height: 5em;
+            margin-bottom: 10px;
+        }
+        .input-group {
+            margin: 10px 0;
+        }
+        input[type="number"] {
+            width: 80px;
+            text-align: center;
+        }
+        #status {
+            margin-top: 30px;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: "Times New Roman", Times, serif;
+        }
+        button {
+            padding: 5px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>ServitorConnect Web</h1>
+    
+    <div>
+        <label for="intentionInput">Intention: </label><br>
+        <textarea id="intentionInput" maxlength="1000"></textarea>
+    </div>
+    
+    <div class="input-group">
+        <label for="repeatsInput">Repeats per Hour: </label>
+        <input type="number" id="repeatsInput" value="1" min="1">
+    </div>
+
+    <div class="input-group">
+        <label for="durationInput">Duration (Seconds): </label>
+        <input type="number" id="durationInput" value="3600" min="1">
+    </div>
+
+    <button id="startBtn" onclick="startProcess()">Start</button>
+    <button id="stopBtn" onclick="stopProcess()" style="display:none;">Stop</button>
+
+    <div id="status">Waiting to start...</div>
+
+    <script>
+        let timerInterval;
+        let worker;
+
+        // We create a Web Worker purely from a string so everything stays in one file.
+        // This is the Javascript equivalent of Python's threading.Thread.
+        const workerCode = `
+            self.onmessage = function(e) {
+                const baseIntent = e.data.baseIntent;
+                const repeats = e.data.repeats;
+
+                for (let r = 0; r < repeats; r++) {
+                    let intentionValue = baseIntent;
+                    
+                    // Hash 88,888,888 times while assigning into the intention
+                    for (let i = 0; i < 88888888; i++) {
+                        let h = 0;
+                        let strVal = String(intentionValue); // Convert number back to string for hashing
+                        
+                        // Polynomial rolling hash matching IntentionColor
+                        for (let j = 0; j < strVal.length; j++) {
+                            h = (h * 31 + strVal.charCodeAt(j)) >>> 0;
+                        }
+                        intentionValue = h;
+                    }
+                }
+                // Optional: Could send a message back when a batch finishes
+                // self.postMessage('Batch Complete');
+            };
+        `;
+
+        // Create a blob URL to initialize the worker without needing a separate .js file
+        const blob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(blob);
+
+        function formatTime(totalSeconds) {
+            const hrs = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+            const mins = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const secs = (totalSeconds % 60).toString().padStart(2, '0');
+            return `${hrs}:${mins}:${secs}`;
+        }
+
+        function startProcess() {
+            const intention = document.getElementById('intentionInput').value.trim();
+            const repeats = parseInt(document.getElementById('repeatsInput').value);
+            const duration = parseInt(document.getElementById('durationInput').value);
+
+            if (!intention) {
+                alert("Please enter an intention.");
+                return;
+            }
+            if (isNaN(repeats) || repeats <= 0 || isNaN(duration) || duration <= 0) {
+                alert("Please enter valid positive numbers for Repeats and Duration.");
+                return;
+            }
+
+            // Update UI
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'inline-block';
+            document.getElementById('intentionInput').disabled = true;
+            document.getElementById('repeatsInput').disabled = true;
+            document.getElementById('durationInput').disabled = true;
+
+            // Initialize Background Worker
+            if (worker) worker.terminate(); // Kill any existing worker
+            worker = new Worker(workerUrl);
+
+            // Time Tracking
+            const startTime = Math.floor(Date.now() / 1000);
+            const endTime = startTime + duration;
+            let nextHourTime = startTime + 3600;
+
+            // Kick off the first batch in the background worker
+            worker.postMessage({ baseIntent: intention, repeats: repeats });
+
+            // Start the visual countdown loop
+            timerInterval = setInterval(() => {
+                const currentTime = Math.floor(Date.now() / 1000);
+
+                if (currentTime >= endTime) {
+                    stopProcess(true); // Complete naturally
+                    return;
+                }
+
+                if (currentTime >= nextHourTime) {
+                    // Trigger the next hourly background batch
+                    worker.postMessage({ baseIntent: intention, repeats: repeats });
+                    nextHourTime += 3600;
+                }
+
+                const remaining = Math.max(0, endTime - currentTime);
+                document.getElementById('status').innerText = 
+                    `Intent Repeated ${repeats} Times Hourly: ${formatTime(remaining)}`;
+
+            }, 1000);
+
+            // Show immediate start status
+            document.getElementById('status').innerText = 
+                `Intent Repeated ${repeats} Times Hourly: ${formatTime(duration)}`;
+        }
+
+        function stopProcess(completed = false) {
+            clearInterval(timerInterval);
+            if (worker) {
+                worker.terminate(); // Immediately kill the background thread
+            }
+
+            // Reset UI
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('intentionInput').disabled = false;
+            document.getElementById('repeatsInput').disabled = false;
+            document.getElementById('durationInput').disabled = false;
+
+            if (completed) {
+                document.getElementById('status').innerText = "Duration completed.";
+            } else {
+                document.getElementById('status').innerText = "Process manually stopped.";
+            }
+        }
+    </script>
+</body>
+</html>
